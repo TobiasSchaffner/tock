@@ -631,6 +631,25 @@ where
                 })
                 .unwrap_or_else(|err| err.into()),
 
+            9 => self.app
+                .enter(appid, |app, _| {
+                    if let Some(BLEState::Initialized) = app.process_status {
+                        let pdu_type = data as AdvPduType;
+                        match pdu_type {
+                            ADV_IND | ADV_NONCONN_IND | ADV_SCAN_IND => {
+                                app.pdu_type = pdu_type;
+                                app.random_nonce = self.alarm.now();
+                                app.send_advertisement(&self, RadioChannel::AdvertisingChannel37);
+                                ReturnCode::SUCCESS
+                            }
+                            _ => ReturnCode::EINVAL,
+                        }
+                    } else {
+                        ReturnCode::EBUSY
+                    }
+                })
+                .unwrap_or_else(|err| err.into()),
+
             _ => ReturnCode::ENOSUPPORT,
         }
     }
